@@ -1,0 +1,1 @@
+"""Response calculation helpers."""
