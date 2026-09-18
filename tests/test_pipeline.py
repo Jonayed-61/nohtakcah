@@ -6,6 +6,10 @@ import pytest
 
 from app.api import routes
 from app.config import settings
+from app.guardrails.directive_validator import (
+    DirectiveValidationError,
+    validate_directives,
+)
 from app.llm.interpreter import LLMInterpreter
 from app.main import app
 from app.schemas.directives import DirectiveInterpretation
@@ -85,6 +89,21 @@ def test_schedule_replay_enforces_directives_independently():
     )
     with pytest.raises(ScheduleValidationError, match="Grid import exceeded"):
         validate_schedule(request, [directive], plan)
+
+
+def test_directives_are_returned_in_note_order_and_bad_hours_are_rejected():
+    data = request_data()
+    data["operator_notes"] = ["First note", "Second note"]
+    request = OptimizeEnergyRequest.model_validate(data)
+    second = interpretation().model_copy(update={"note_index": 1})
+    result = validate_directives([second, interpretation()], request)
+    assert [item.note_index for item in result] == [0, 1]
+
+    duplicate_hours = interpretation(
+        "no_charge_window", {"hours": [2, 2]}, applies=True
+    )
+    with pytest.raises(DirectiveValidationError, match="Hours must be unique"):
+        validate_directives([duplicate_hours, second], request)
 
 
 @pytest.mark.parametrize(
@@ -168,4 +187,6 @@ async def test_endpoint_maps_pipeline_failures(monkeypatch, fake, status_code):
         response = await client.post("/optimize-energy", json=request_data())
 
     assert response.status_code == status_code
+    assert set(response.json()) == {"detail"}
+    assert "Traceback" not in response.text
     assert "private upstream detail" not in response.text

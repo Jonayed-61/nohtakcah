@@ -1,9 +1,11 @@
 from typing import List
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class HourForecast(BaseModel):
+    model_config = ConfigDict(allow_inf_nan=False)
+
     hour: int = Field(..., ge=0, le=23)
     demand_kwh: float = Field(..., ge=0.0)
     solar_kwh: float = Field(..., ge=0.0)
@@ -11,6 +13,8 @@ class HourForecast(BaseModel):
 
 
 class BatterySpec(BaseModel):
+    model_config = ConfigDict(allow_inf_nan=False)
+
     capacity_kwh: float = Field(..., gt=0.0)
     initial_energy_kwh: float = Field(..., ge=0.0)
     minimum_energy_kwh: float = Field(..., ge=0.0)
@@ -24,6 +28,14 @@ class BatterySpec(BaseModel):
         if capacity is not None and value > capacity:
             raise ValueError("initial_energy_kwh cannot exceed capacity_kwh")
         return value
+
+    @model_validator(mode="after")
+    def energy_bounds_are_consistent(self):
+        if self.minimum_energy_kwh > self.capacity_kwh:
+            raise ValueError("minimum_energy_kwh cannot exceed capacity_kwh")
+        if self.initial_energy_kwh < self.minimum_energy_kwh:
+            raise ValueError("initial_energy_kwh cannot be below minimum_energy_kwh")
+        return self
 
 
 class OptimizeEnergyRequest(BaseModel):

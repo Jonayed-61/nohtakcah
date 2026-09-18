@@ -7,7 +7,6 @@ from app.schemas.response import HealthResponse, OptimizeEnergyResponse
 from app.services.optimization_service import OptimizationService
 from app.validators.schedule_validator import ScheduleValidationError
 
-
 router = APIRouter()
 optimization_service = OptimizationService()
 

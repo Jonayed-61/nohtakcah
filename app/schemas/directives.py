@@ -2,7 +2,6 @@ from typing import List, Literal, Optional, Union
 
 from pydantic import BaseModel, Field
 
-
 DirectiveType = Literal[
     "solar_reduction",
     "minimum_battery_reserve",

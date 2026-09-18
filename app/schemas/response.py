@@ -4,7 +4,6 @@ from pydantic import BaseModel, Field
 
 from app.schemas.directives import DirectiveInterpretation
 
-
 BatteryAction = Literal["charge", "discharge", "idle"]
 
 
