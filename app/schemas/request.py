@@ -4,7 +4,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 
 class HourForecast(BaseModel):
-    model_config = ConfigDict(allow_inf_nan=False)
+    model_config = ConfigDict(extra="forbid", strict=True, allow_inf_nan=False)
 
     hour: int = Field(..., ge=0, le=23)
     demand_kwh: float = Field(..., ge=0.0)
@@ -13,7 +13,7 @@ class HourForecast(BaseModel):
 
 
 class BatterySpec(BaseModel):
-    model_config = ConfigDict(allow_inf_nan=False)
+    model_config = ConfigDict(extra="forbid", strict=True, allow_inf_nan=False)
 
     capacity_kwh: float = Field(..., gt=0.0)
     initial_energy_kwh: float = Field(..., ge=0.0)
@@ -39,7 +39,9 @@ class BatterySpec(BaseModel):
 
 
 class OptimizeEnergyRequest(BaseModel):
-    scenario_id: str
+    model_config = ConfigDict(extra="forbid", strict=True, allow_inf_nan=False)
+
+    scenario_id: str = Field(..., min_length=1)
     operator_notes: List[str] = Field(..., min_length=1, max_length=3)
     hours: List[HourForecast] = Field(..., min_length=24, max_length=24)
     battery: BatterySpec

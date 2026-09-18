@@ -1,5 +1,6 @@
 """Interpret operator notes into structured directives using Gemini JSON output."""
 
+import asyncio
 import json
 from typing import List
 
@@ -36,6 +37,14 @@ class LLMInterpreter:
             "for max_grid_window use {hours: [0..23], max_grid_kwh: number}. "
             "For irrelevant or ambiguous notes use applies=false, directive_type=no_op, "
             "structured_adjustment=null. Interpret hours as zero-based clock hours. "
+            "For every other directive use applies=true and only the adjustment fields listed above. "
+            "Every adjustment must have a nonempty, unique, ascending list of integer hours from 0 through 23. "
+            "A solar factor is the fraction still usable: 25% of forecast means 0.25, "
+            "while a 25% reduction means 0.75. "
+            "Convert percentage battery reserve instructions to kWh using the battery capacity; "
+            "for example, 50% of a 200 kWh battery means minimum_energy_kwh=100. "
+            "Time windows include the starting hour and exclude the ending hour; "
+            "for example, 1 PM to 3 PM means hours [13, 14]. "
             "Do not invent numerical limits that are absent from the note. "
             f"Battery capacity is {capacity_kwh} kWh. "
             f"Operator notes: {json.dumps(operator_notes, ensure_ascii=False)}"
@@ -43,17 +52,27 @@ class LLMInterpreter:
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{settings.LLM_MODEL}:generateContent"
         payload = {
             "contents": [{"parts": [{"text": prompt}]}],
-            "generationConfig": {"responseMimeType": "application/json"},
+            "generationConfig": {"responseMimeType": "application/json", "temperature": 0},
         }
         try:
             async with httpx.AsyncClient(timeout=settings.LLM_TIMEOUT_SECONDS) as client:
-                response = await client.post(
-                    url,
-                    headers={"x-goog-api-key": settings.LLM_API_KEY},
-                    json=payload,
-                )
-                response.raise_for_status()
-                result = response.json()
+                for attempt in range(3):
+                    try:
+                        response = await client.post(
+                            url,
+                            headers={"x-goog-api-key": settings.LLM_API_KEY},
+                            json=payload,
+                        )
+                        if response.status_code in {429, 500, 502, 503, 504} and attempt < 2:
+                            await asyncio.sleep(2**attempt)
+                            continue
+                        response.raise_for_status()
+                        result = response.json()
+                        break
+                    except (httpx.TimeoutException, httpx.NetworkError):
+                        if attempt == 2:
+                            raise
+                        await asyncio.sleep(2**attempt)
             parts = result["candidates"][0]["content"]["parts"]
             text = "".join(part.get("text", "") for part in parts)
             parsed = json.loads(text)

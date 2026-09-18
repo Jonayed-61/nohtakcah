@@ -1,5 +1,8 @@
+import asyncio
+
 from fastapi import APIRouter, HTTPException, status
 
+from app.config import settings
 from app.guardrails.directive_validator import DirectiveValidationError
 from app.optimizer.solver import OptimizationError
 from app.schemas.request import OptimizeEnergyRequest
@@ -23,7 +26,14 @@ async def health_check():
 )
 async def optimize_energy(request: OptimizeEnergyRequest):
     try:
-        return await optimization_service.run_pipeline(request)
+        return await asyncio.wait_for(
+            optimization_service.run_pipeline(request), timeout=settings.REQUEST_TIMEOUT_SECONDS
+        )
+    except TimeoutError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Optimization request timed out.",
+        ) from exc
     except (DirectiveValidationError, ScheduleValidationError) as exc:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,

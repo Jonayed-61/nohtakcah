@@ -25,9 +25,11 @@ class OptimizationService:
         validated_directives = validate_directives(raw_directives, request)
         context = build_optimization_context(request, validated_directives)
         candidate_schedule = await asyncio.to_thread(solve_energy_optimization, context)
-        validate_schedule(request, validated_directives, candidate_schedule)
+        hourly_plan = [HourlyPlanEntry(**entry) for entry in candidate_schedule]
+        returned_schedule = [entry.model_dump() for entry in hourly_plan]
+        validate_schedule(request, validated_directives, returned_schedule)
 
-        total_grid, total_cost, peak_grid = calculate_totals(candidate_schedule, request.hours)
+        total_grid, total_cost, peak_grid = calculate_totals(returned_schedule, request.hours)
         active_count = sum(
             directive.applies and directive.directive_type != "no_op"
             for directive in validated_directives
@@ -35,7 +37,7 @@ class OptimizationService:
         return OptimizeEnergyResponse(
             scenario_id=request.scenario_id,
             directive_interpretation=validated_directives,
-            hourly_plan=[HourlyPlanEntry(**entry) for entry in candidate_schedule],
+            hourly_plan=hourly_plan,
             total_grid_kwh=total_grid,
             total_cost_bdt=total_cost,
             peak_grid_kwh=peak_grid,

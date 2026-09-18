@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#102b28" />
+    <meta name="description" content="Plan a 24-hour campus energy schedule with GridWise LLM." />
+    <title>GridWise · Energy planning workspace</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+    <script src="/static/app.js" defer></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="/" aria-label="GridWise home">
+          <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span><span></span></span>
+          <span>GridWise<span class="brand-dot">.</span></span>
+        </a>
+        <nav class="top-actions" aria-label="Main navigation">
+          <a href="#workspace">Workspace</a>
+          <a href="#results">Results</a>
+          <a href="/docs" target="_blank" rel="noopener noreferrer">API docs <span aria-hidden="true">↗</span></a>
+          <span id="healthStatus" class="health-chip checking"><span class="health-dot"></span>Checking API</span>
+        </nav>
+      </header>
+
+      <main>
+        <section class="hero" aria-labelledby="hero-title">
+          <div class="hero-content">
+            <div class="eyebrow"><span class="eyebrow-line"></span> CAMPUS ENERGY INTELLIGENCE</div>
+            <h1 id="hero-title">A clearer way to plan <em>every kilowatt.</em></h1>
+            <p>Bring your demand, rooftop solar, battery, and operator notes together. GridWise turns them into a verified 24-hour plan.</p>
+            <div class="hero-pills" aria-label="Planning features">
+              <span>24-hour horizon</span>
+              <span>LLM-interpreted notes</span>
+              <span>Cost-optimized schedule</span>
+            </div>
+          </div>
+          <div class="hero-art" aria-hidden="true">
+            <div class="art-orbit orbit-one"></div>
+            <div class="art-orbit orbit-two"></div>
+            <div class="art-center"><span class="art-sun">✦</span><span class="art-bars"><i></i><i></i><i></i><i></i><i></i></span></div>
+            <span class="art-tag tag-solar">SOLAR <b>↗</b></span>
+            <span class="art-tag tag-battery">BATTERY <b>↕</b></span>
+            <span class="art-tag tag-grid">GRID <b>↘</b></span>
+          </div>
+        </section>
+
+        <section id="workspace" class="workspace-section" aria-labelledby="workspace-title">
+          <div class="section-heading">
+            <div><span class="section-kicker">01 / BUILD A SCENARIO</span><h2 id="workspace-title">Planning workspace</h2></div>
+            <p>Edit the starter values or import a case from the public sample JSON.</p>
+          </div>
+
+          <div class="workspace-grid">
+            <div class="main-column">
+              <section class="panel setup-panel" aria-labelledby="setup-title">
+                <div class="panel-heading"><div><span class="panel-index">01</span><h3 id="setup-title">Scenario setup</h3></div><button class="text-button" id="resetButton" type="button">Reset example</button></div>
+                <div class="field full-width"><label for="scenarioId">Scenario ID</label><input id="scenarioId" type="text" autocomplete="off" placeholder="e.g. CAMPUS-001" /><small>Returned unchanged with your plan.</small></div>
+
+                <div class="subheading-row"><h4>Battery specifications</h4><span>kWh unless noted</span></div>
+                <div class="battery-grid">
+                  <div class="field"><label for="capacity">Capacity</label><input id="capacity" type="number" min="0" step="any" inputmode="decimal" /></div>
+                  <div class="field"><label for="initialEnergy">Initial energy</label><input id="initialEnergy" type="number" min="0" step="any" inputmode="decimal" /></div>
+                  <div class="field"><label for="minimumEnergy">Minimum energy</label><input id="minimumEnergy" type="number" min="0" step="any" inputmode="decimal" /></div>
+                  <div class="field"><label for="maxCharge">Max charge / hour</label><input id="maxCharge" type="number" min="0" step="any" inputmode="decimal" /></div>
+                  <div class="field"><label for="maxDischarge">Max discharge / hour</label><input id="maxDischarge" type="number" min="0" step="any" inputmode="decimal" /></div>
+                </div>
+
+                <div class="field notes-field"><label for="operatorNotes">Operator notes <span class="label-count">1–3 notes</span></label><textarea id="operatorNotes" rows="4" placeholder="Write one operator note per line."></textarea><small>One note per line. Unrelated notes are interpreted as no operation.</small></div>
+              </section>
+
+              <section class="panel forecast-panel" aria-labelledby="forecast-title">
+                <div class="panel-heading"><div><span class="panel-index">02</span><h3 id="forecast-title">Hourly forecast</h3></div><span class="table-count">24 HOURS</span></div>
+                <p class="panel-intro">Set demand, available solar, and grid tariff for each hour. Values can include decimals.</p>
+                <div class="table-scroll"><table class="data-table edit-table"><thead><tr><th scope="col">Hour</th><th scope="col">Demand <span>kWh</span></th><th scope="col">Solar <span>kWh</span></th><th scope="col">Tariff <span>BDT/kWh</span></th></tr></thead><tbody id="forecastRows"></tbody></table></div>
+              </section>
+            </div>
+
+            <aside class="side-column" aria-label="Scenario actions">
+              <section class="panel import-panel" aria-labelledby="import-title">
+                <div class="panel-heading"><div><span class="panel-index">A</span><h3 id="import-title">Import a sample</h3></div></div>
+                <p>Choose the official public sample JSON from your computer. Select a case and its <strong>input</strong> will fill the form.</p>
+                <input id="sampleFile" class="visually-hidden" type="file" accept=".json,application/json" />
+                <button id="chooseFileButton" class="secondary-button" type="button"><span aria-hidden="true">↥</span> Choose JSON file</button>
+                <div class="field case-field"><label for="caseSelect">Sample case</label><select id="caseSelect" disabled><option value="">Choose a file first</option></select></div>
+                <p id="fileName" class="file-name">No file selected</p>
+              </section>
+
+              <section class="panel action-panel" aria-labelledby="action-title">
+                <span class="action-icon" aria-hidden="true">✦</span>
+                <h3 id="action-title">Ready to find the best plan?</h3>
+                <p>We'll interpret the notes, solve the schedule, and replay the result before showing it here.</p>
+                <button id="runButton" class="primary-button" type="button"><span class="button-label">Optimize energy</span><span aria-hidden="true">↗</span></button>
+                <button id="downloadRequestButton" class="link-button" type="button">Download request JSON <span aria-hidden="true">↓</span></button>
+                <div id="runStatus" class="run-status" role="status" aria-live="polite">Edit the scenario or load a public case to begin.</div>
+              </section>
+
+              <section class="help-card" aria-labelledby="help-title">
+                <span class="help-kicker">HOW IT WORKS</span><h3 id="help-title">From note to plan</h3>
+                <ol><li><span>01</span><p>Gemini turns each note into a structured directive.</p></li><li><span>02</span><p>Guardrails check hours, types, and bounds.</p></li><li><span>03</span><p>The optimizer builds and verifies the lowest-cost plan.</p></li></ol>
+              </section>
+            </aside>
+          </div>
+        </section>
+
+        <section id="results" class="results-section" aria-labelledby="results-title">
+          <div class="section-heading results-heading"><div><span class="section-kicker">02 / REVIEW THE PLAN</span><h2 id="results-title">Optimization results</h2></div><button id="downloadResultButton" class="secondary-button compact" type="button" disabled>Download result JSON <span aria-hidden="true">↓</span></button></div>
+          <div id="emptyResults" class="empty-results"><div class="empty-illustration" aria-hidden="true"><span>✦</span><i></i><i></i><i></i></div><h3>Your plan will appear here</h3><p>Fill in a scenario or import a public sample, then select <strong>Optimize energy</strong>.</p></div>
+          <div id="resultsContent" hidden>
+            <div class="metrics-grid">
+              <article class="metric-card cost-card"><span class="metric-label">TOTAL GRID COST</span><strong id="totalCost">—</strong><span class="metric-unit">BDT across 24 hours</span></article>
+              <article class="metric-card"><span class="metric-label">GRID ENERGY</span><strong id="totalGrid">—</strong><span class="metric-unit">kWh purchased</span></article>
+              <article class="metric-card"><span class="metric-label">PEAK GRID IMPORT</span><strong id="peakGrid">—</strong><span class="metric-unit">kWh in one hour</span></article>
+              <article class="metric-card"><span class="metric-label">DIRECTIVES APPLIED</span><strong id="directiveCount">—</strong><span class="metric-unit">operator instructions</span></article>
+            </div>
+            <div class="result-grid">
+              <section class="panel chart-panel" aria-labelledby="chart-title"><div class="panel-heading"><div><span class="panel-index">01</span><h3 id="chart-title">Energy by hour</h3></div></div><div class="chart-legend"><span><i class="legend-grid"></i> Grid</span><span><i class="legend-solar"></i> Solar used</span><span><i class="legend-demand"></i> Demand</span></div><div id="energyChart" class="chart-wrap" role="img" aria-label="Hourly demand, grid import, and solar use chart"></div></section>
+              <section class="panel directive-panel" aria-labelledby="directives-title"><div class="panel-heading"><div><span class="panel-index">02</span><h3 id="directives-title">Interpreted notes</h3></div></div><div id="directiveList" class="directive-list"></div></section>
+            </div>
+            <section class="panel plan-panel" aria-labelledby="plan-title"><div class="panel-heading"><div><span class="panel-index">03</span><h3 id="plan-title">24-hour schedule</h3></div><span class="table-count" id="resultScenarioId"></span></div><p id="planSummary" class="plan-summary"></p><div class="table-scroll"><table class="data-table result-table"><thead><tr><th scope="col">Hour</th><th scope="col">Grid <span>kWh</span></th><th scope="col">Solar used <span>kWh</span></th><th scope="col">Battery action</th><th scope="col">Battery <span>kWh</span></th><th scope="col">Energy after <span>kWh</span></th></tr></thead><tbody id="planRows"></tbody></table></div></section>
+          </div>
+        </section>
+      </main>
+
+      <footer class="footer"><span>GridWise<span class="brand-dot">.</span> Campus energy planning</span><span>Every plan is checked hour by hour before it is returned.</span><a href="/docs" target="_blank" rel="noopener noreferrer">API documentation ↗</a></footer>
+    </div>
+  </body>
+</html>

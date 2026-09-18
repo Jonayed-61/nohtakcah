@@ -50,7 +50,12 @@ def validate_directives(
         seen_indices.add(index)
 
         kind = interpretation.directive_type
-        if interpretation.applies and kind != "no_op":
+        if kind == "no_op":
+            if interpretation.applies or interpretation.structured_adjustment is not None:
+                raise DirectiveValidationError(f"Note {index}: Invalid no_op semantics")
+        else:
+            if not interpretation.applies:
+                raise DirectiveValidationError(f"Note {index}: Applicable directive must set applies=true")
             if interpretation.structured_adjustment is None:
                 raise DirectiveValidationError(f"Note {index}: Missing structured adjustment")
             adjustment_type = _ADJUSTMENT_TYPES[kind]
@@ -62,8 +67,8 @@ def validate_directives(
                 raise DirectiveValidationError(f"Note {index}: Invalid {kind} adjustment") from exc
 
             hours = adjustment.hours
-            if not hours or len(set(hours)) != len(hours) or any(type(h) is not int or h < 0 or h > 23 for h in hours):
-                raise DirectiveValidationError(f"Note {index}: Hours must be unique integers from 0 to 23")
+            if not hours or any(type(h) is not int or h < 0 or h > 23 for h in hours) or hours != sorted(set(hours)):
+                raise DirectiveValidationError(f"Note {index}: Hours must be unique ascending integers from 0 to 23")
             if kind == "minimum_battery_reserve":
                 if not math.isfinite(adjustment.minimum_energy_kwh) or adjustment.minimum_energy_kwh > request.battery.capacity_kwh:
                     raise DirectiveValidationError(f"Note {index}: Reserve exceeds battery capacity")
@@ -71,9 +76,6 @@ def validate_directives(
                 raise DirectiveValidationError(f"Note {index}: Grid cap must be finite")
 
             interpretation = interpretation.model_copy(update={"structured_adjustment": adjustment})
-        elif kind == "no_op":
-            interpretation = interpretation.model_copy(update={"applies": False, "structured_adjustment": None})
-
         validated.append(interpretation)
 
     return sorted(validated, key=lambda item: item.note_index)
