@@ -1,3 +1,4 @@
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -10,9 +11,10 @@ class Settings(BaseSettings):
 
     # LLM Settings
     LLM_PROVIDER: str = "google"
-    LLM_MODEL: str = "gemini-2.5-flash"
+    LLM_MODEL: str = "gemini-3.1-flash-lite"
     LLM_API_KEY: str = ""
-    LLM_TIMEOUT_SECONDS: float = 12.0
+    LLM_TIMEOUT_SECONDS: float = 30.0
+    REQUEST_TIMEOUT_SECONDS: float = Field(default=29.0, gt=0.0, le=29.0)
 
     # Server Settings
     PORT: int = 8000

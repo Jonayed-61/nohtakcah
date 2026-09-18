@@ -1,6 +1,6 @@
 from typing import List, Literal, Optional, Union
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 DirectiveType = Literal[
     "solar_reduction",
@@ -12,8 +12,13 @@ DirectiveType = Literal[
 ]
 
 
-class SolarReductionAdjustment(BaseModel):
+class HoursAdjustment(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True, allow_inf_nan=False)
+
     hours: List[int] = Field(..., description="List of hour indices 0..23")
+
+
+class SolarReductionAdjustment(HoursAdjustment):
     factor: float = Field(
         ...,
         ge=0.0,
@@ -22,21 +27,19 @@ class SolarReductionAdjustment(BaseModel):
     )
 
 
-class MinimumBatteryReserveAdjustment(BaseModel):
-    hours: List[int]
+class MinimumBatteryReserveAdjustment(HoursAdjustment):
     minimum_energy_kwh: float = Field(..., ge=0.0)
 
 
-class NoChargeWindowAdjustment(BaseModel):
-    hours: List[int]
+class NoChargeWindowAdjustment(HoursAdjustment):
+    """Hours in which the battery cannot charge."""
 
 
-class NoDischargeWindowAdjustment(BaseModel):
-    hours: List[int]
+class NoDischargeWindowAdjustment(HoursAdjustment):
+    """Hours in which the battery cannot discharge."""
 
 
-class MaxGridWindowAdjustment(BaseModel):
-    hours: List[int]
+class MaxGridWindowAdjustment(HoursAdjustment):
     max_grid_kwh: float = Field(..., ge=0.0)
 
 
@@ -51,6 +54,8 @@ StructuredAdjustment = Union[
 
 
 class DirectiveInterpretation(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True, allow_inf_nan=False)
+
     note_index: int = Field(..., ge=0, le=2)
     applies: bool
     directive_type: DirectiveType

@@ -54,7 +54,9 @@ def build_optimization_context(
         if interpretation.directive_type == "solar_reduction":
             factor = getattr(adjustment, "factor", 1.0)
             for hour in hours:
-                effective_solar[hour] = request.hours[hour].solar_kwh * factor
+                effective_solar[hour] = min(
+                    effective_solar[hour], request.hours[hour].solar_kwh * factor
+                )
 
         elif interpretation.directive_type == "minimum_battery_reserve":
             minimum = getattr(adjustment, "minimum_energy_kwh", base_minimum)

@@ -49,7 +49,9 @@ def validate_schedule(
         if interpretation.directive_type == "solar_reduction":
             factor = getattr(adjustment, "factor", 1.0)
             for h in hours:
-                effective_solar[h] = request.hours[h].solar_kwh * factor
+                effective_solar[h] = min(
+                    effective_solar[h], request.hours[h].solar_kwh * factor
+                )
         elif interpretation.directive_type == "minimum_battery_reserve":
             minimum = getattr(adjustment, "minimum_energy_kwh", battery.minimum_energy_kwh)
             for h in hours:
