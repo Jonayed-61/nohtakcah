@@ -1,18 +1,18 @@
 # GridWise LLM
 
-An API for scheduling 24 hours of campus electricity demand, solar generation, and battery use at minimum grid cost. The service interprets operator notes with Google's Gemini API, validates the resulting directives, solves a mixed integer linear program with PuLP/CBC, and independently replays the schedule before returning it.
+An API for scheduling 24 hours of campus electricity demand, solar generation, and battery use at minimum grid cost. The service interprets operator notes with Groq's API, validates the resulting directives, solves a mixed integer linear program with PuLP/CBC, and independently replays the schedule before returning it.
 
 ## Processing flow
 
 1. Pydantic validates the 24 hourly forecasts, battery limits, and operator notes.
-2. Gemini interprets each note into one structured directive.
+2. Groq interprets each note into one structured directive.
 3. Guardrails validate directive types, hours, and numerical bounds.
 4. The optimization model applies those bounds to the hourly forecast; CBC minimizes grid cost.
 5. A separate replay validator checks energy balance, battery limits, directives, and end-of-day battery neutrality. Totals are recalculated from the accepted plan.
 
 ## Setup
 
-Python 3.12 is used in the container. Install the dependencies and set a Gemini API key:
+Python 3.12 is used in the container. Install the dependencies and set a Groq API key:
 
 ```bash
 python -m venv .venv
@@ -20,6 +20,8 @@ python -m pip install -r requirements.txt
 ```
 
 Copy `.env.example` to `.env` and set `LLM_API_KEY`. The API cannot optimize requests without a configured key. On Windows, activate the virtual environment with `.venv\Scripts\Activate.ps1`; on macOS/Linux, use `source .venv/bin/activate`.
+
+The default Groq model is `openai/gpt-oss-20b`. Use a model returned by Groq's `/models` endpoint if your API key has different model access.
 
 ```bash
 python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
@@ -49,4 +51,4 @@ docker build -t gridwise-llm .
 docker run --env-file .env -p 8000:8000 gridwise-llm
 ```
 
-The container includes the CBC solver. Its API listens on port 8000. Provide the Gemini key through `.env` or another environment variable source; `.env` is excluded from the image.
+The container includes the CBC solver. Its API listens on port 8000. Provide the Groq API key through `.env` or another environment variable source; `.env` is excluded from the image.
