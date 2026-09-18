@@ -1,5 +1,5 @@
-import pytest
 import pulp
+import pytest
 
 from app.optimizer.model import build_optimization_context
 from app.optimizer.solver import OptimizationError, solve_energy_optimization

@@ -4,7 +4,6 @@ from fastapi.responses import JSONResponse
 from app.api.routes import router
 from app.config import settings
 
-
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
