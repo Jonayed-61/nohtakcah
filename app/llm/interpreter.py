@@ -1,4 +1,4 @@
-"""Interpret operator notes into structured directives using Groq JSON output."""
+"""Interpret operator notes into structured directives using Gemini JSON output."""
 
 import json
 from typing import List
@@ -19,7 +19,7 @@ class LLMInterpreter:
         operator_notes: List[str],
         capacity_kwh: float,
     ) -> List[DirectiveInterpretation]:
-        if settings.LLM_PROVIDER != "groq":
+        if settings.LLM_PROVIDER != "google":
             raise LLMInterpretationError("Unsupported LLM provider")
         if not settings.LLM_API_KEY:
             raise LLMInterpretationError("LLM API key is not configured")
@@ -40,28 +40,22 @@ class LLMInterpreter:
             f"Battery capacity is {capacity_kwh} kWh. "
             f"Operator notes: {json.dumps(operator_notes, ensure_ascii=False)}"
         )
-        url = "https://api.groq.com/openai/v1/chat/completions"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{settings.LLM_MODEL}:generateContent"
         payload = {
-            "model": settings.LLM_MODEL,
-            "messages": [
-                {
-                    "role": "system",
-                    "content": "Return only valid JSON. Follow the user's output contract exactly.",
-                },
-                {"role": "user", "content": prompt},
-            ],
-            "response_format": {"type": "json_object"},
+            "contents": [{"parts": [{"text": prompt}]}],
+            "generationConfig": {"responseMimeType": "application/json"},
         }
         try:
             async with httpx.AsyncClient(timeout=settings.LLM_TIMEOUT_SECONDS) as client:
                 response = await client.post(
                     url,
-                    headers={"Authorization": f"Bearer {settings.LLM_API_KEY}"},
+                    headers={"x-goog-api-key": settings.LLM_API_KEY},
                     json=payload,
                 )
                 response.raise_for_status()
                 result = response.json()
-            text = result["choices"][0]["message"]["content"]
+            parts = result["candidates"][0]["content"]["parts"]
+            text = "".join(part.get("text", "") for part in parts)
             parsed = json.loads(text)
             if not isinstance(parsed, list):
                 raise ValueError("Expected a JSON array")

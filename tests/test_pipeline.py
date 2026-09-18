@@ -123,22 +123,17 @@ def test_schedule_replay_enforces_battery_directives(kind, adjustment, change, m
 
 
 @pytest.mark.asyncio
-async def test_interpreter_parses_groq_json_response(monkeypatch):
+async def test_interpreter_parses_gemini_json_response(monkeypatch):
     monkeypatch.setattr(settings, "LLM_API_KEY", "test-key")
-    monkeypatch.setattr(settings, "LLM_PROVIDER", "groq")
-    monkeypatch.setattr(settings, "LLM_MODEL", "openai/gpt-oss-20b")
     original_client = httpx.AsyncClient
 
     def respond(request):
-        assert request.headers["authorization"] == "Bearer test-key"
-        assert request.url.host == "api.groq.com"
-        assert request.url.path == "/openai/v1/chat/completions"
-        payload = json.loads(request.content)
-        assert payload["model"] == "openai/gpt-oss-20b"
-        assert payload["response_format"] == {"type": "json_object"}
+        assert request.headers["x-goog-api-key"] == "test-key"
+        assert request.url.path.endswith("/gemini-2.5-flash:generateContent")
+        assert request.read()
         return httpx.Response(
             200,
-            json={"choices": [{"message": {"content": json.dumps([interpretation().model_dump()])}}]},
+            json={"candidates": [{"content": {"parts": [{"text": json.dumps([interpretation().model_dump()])}]}}]},
         )
 
     transport = httpx.MockTransport(respond)

@@ -9,8 +9,8 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "production"
 
     # LLM Settings
-    LLM_PROVIDER: str = "groq"
-    LLM_MODEL: str = "openai/gpt-oss-20b"
+    LLM_PROVIDER: str = "google"
+    LLM_MODEL: str = "gemini-2.5-flash"
     LLM_API_KEY: str = ""
     LLM_TIMEOUT_SECONDS: float = 12.0
 
